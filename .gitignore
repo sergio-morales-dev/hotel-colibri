@@ -1,0 +1,16 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Java / Maven
+api/target/
+
+# IDE y sistema
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Credenciales (MySQL en el proyecto final)
+.env
