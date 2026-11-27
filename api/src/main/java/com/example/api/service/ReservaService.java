@@ -3,7 +3,6 @@ package com.example.api.service;
 import com.example.api.dto.ReservaPeticion;
 import com.example.api.dto.ReservaRespuesta;
 import com.example.api.exception.ConflictoException;
-import com.example.api.exception.DatosInvalidosException;
 import com.example.api.exception.RecursoNoEncontradoException;
 import com.example.api.exception.ReglaNegocioException;
 import com.example.api.model.Habitacion;
@@ -16,7 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 
 /**
@@ -44,11 +42,6 @@ import java.time.temporal.ChronoUnit;
 @Service
 public class ReservaService {
 
-    // "Hoy" se calcula con la zona horaria del hotel, no la del servidor:
-    // si la API corriera en un servidor en otro país, "hoy" podría ser
-    // otro día.
-    private static final ZoneId ZONA_HOTEL = ZoneId.of("America/Mexico_City");
-
     private final ReservaRepository reservaRepository;
     private final HabitacionService habitacionService;
     private final HuespedService huespedService;
@@ -63,8 +56,8 @@ public class ReservaService {
 
     @Transactional
     public ReservaRespuesta crear(ReservaPeticion peticion) {
-        // 1. Fechas -> 400
-        validarFechas(peticion.fechaEntrada(), peticion.fechaSalida());
+        // 1. Fechas -> 400 (regla compartida con la búsqueda de disponibles)
+        ValidadorFechas.validarEstancia(peticion.fechaEntrada(), peticion.fechaSalida());
 
         // 2. Existencia -> 404 (la habitación se bloquea hasta terminar,
         //    para que dos reservas simultáneas no se encimen)
@@ -114,20 +107,7 @@ public class ReservaService {
                 .orElseThrow(() -> new RecursoNoEncontradoException("No existe la reserva " + id));
     }
 
-    // ---------------- Reglas auxiliares (privadas) ----------------
-
-    /** Regla 6.3: salida posterior a la entrada y entrada no en el pasado. */
-    private void validarFechas(LocalDate entrada, LocalDate salida) {
-        if (!salida.isAfter(entrada)) {
-            throw new DatosInvalidosException("La fecha de salida (" + salida
-                    + ") debe ser posterior a la fecha de entrada (" + entrada + ")");
-        }
-        LocalDate hoy = LocalDate.now(ZONA_HOTEL);
-        if (entrada.isBefore(hoy)) {
-            throw new DatosInvalidosException("La fecha de entrada (" + entrada
-                    + ") no puede estar en el pasado (hoy es " + hoy + ")");
-        }
-    }
+    // ---------------- Regla auxiliar (privada) ----------------
 
     /**
      * Total = noches × precio por noche.

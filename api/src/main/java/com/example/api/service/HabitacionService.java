@@ -7,9 +7,11 @@ import com.example.api.exception.DatosInvalidosException;
 import com.example.api.exception.RecursoNoEncontradoException;
 import com.example.api.model.Habitacion;
 import com.example.api.repository.HabitacionRepository;
+import com.example.api.repository.ReservaRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -36,18 +38,43 @@ import java.util.List;
 public class HabitacionService {
 
     private final HabitacionRepository habitacionRepository;
+    private final ReservaRepository reservaRepository; // solo para la búsqueda de disponibles
 
-    // Inyección por constructor: Spring pasa el repository al crear el
-    // service. Es la forma recomendada (el campo puede ser final y es
+    // Inyección por constructor: Spring pasa los repositories al crear el
+    // service. Es la forma recomendada (los campos pueden ser final y es
     // fácil de probar).
-    public HabitacionService(HabitacionRepository habitacionRepository) {
+    public HabitacionService(HabitacionRepository habitacionRepository,
+                             ReservaRepository reservaRepository) {
         this.habitacionRepository = habitacionRepository;
+        this.reservaRepository = reservaRepository;
     }
 
     @Transactional(readOnly = true)
     public List<HabitacionRespuesta> listar() {
         return habitacionRepository.findAll().stream()
                 .map(HabitacionRespuesta::desde) // entidad -> JSON-LD
+                .toList();
+    }
+
+    /**
+     * Habitaciones DISPONIBLES para una estancia (prueba 14):
+     *   1. Fechas válidas (misma regla 6.3 que al reservar) -> si no, 400.
+     *   2. Candidatas: activas y con capacidad >= huéspedes.
+     *   3. Se quitan las que tienen traslape con una reserva activa.
+     *
+     * Se REUTILIZA ReservaRepository.existeTraslape: la regla de traslape
+     * existe una sola vez en todo el proyecto, así que "disponible" aquí
+     * significa exactamente "se podría reservar" en POST /reservas.
+     * (Hace una consulta por habitación candidata; con las pocas
+     * habitaciones de un hotel es despreciable.)
+     */
+    @Transactional(readOnly = true)
+    public List<HabitacionRespuesta> disponibles(LocalDate entrada, LocalDate salida, int huespedes) {
+        ValidadorFechas.validarEstancia(entrada, salida);
+        return habitacionRepository.findByActivaTrueAndCapacidadGreaterThanEqualOrderByNumeroAsc(huespedes)
+                .stream()
+                .filter(h -> !reservaRepository.existeTraslape(h, entrada, salida))
+                .map(HabitacionRespuesta::desde)
                 .toList();
     }
 

@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -22,8 +23,8 @@ import java.util.Optional;
  * NOMBRE del método y arma el SQL. Por ejemplo, findByNumero se
  * convierte en  SELECT * FROM habitaciones WHERE numero = ?
  *
- * La consulta de habitaciones DISPONIBLES (sin traslape de fechas)
- * se agrega en la fase 3, cuando ya exista la entidad Reserva.
+ * La búsqueda de DISPONIBLES usa findByActivaTrue... (candidatas) y
+ * luego ReservaRepository.existeTraslape (ver HabitacionService).
  *
  * Depende de: Habitacion.
  */
@@ -35,6 +36,11 @@ public interface HabitacionRepository extends JpaRepository<Habitacion, Long> {
 
     // Para responder 409 si alguien intenta dar de alta un número repetido.
     boolean existsByNumero(String numero);
+
+    // Candidatas para la búsqueda de disponibles: activas y con cupo.
+    // El nombre se traduce a:
+    //   WHERE activa = true AND capacidad >= ? ORDER BY numero ASC
+    List<Habitacion> findByActivaTrueAndCapacidadGreaterThanEqualOrderByNumeroAsc(Integer huespedes);
 
     /**
      * Igual que findByNumero, pero BLOQUEA la fila de la habitación hasta
