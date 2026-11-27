@@ -95,6 +95,22 @@ public class HabitacionService {
      */
     public Habitacion buscarPorNumero(String numero) {
         return habitacionRepository.findByNumero(numero)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe la habitación " + numero));
+                .orElseThrow(() -> noExiste(numero));
+    }
+
+    /**
+     * Igual que buscarPorNumero, pero bloquea la habitación mientras dura
+     * la transacción de quien la llama (ver HabitacionRepository).
+     * La usa ReservaService para que dos reservas simultáneas de la misma
+     * habitación no se encimen.
+     */
+    public Habitacion buscarParaReservar(String numero) {
+        return habitacionRepository.buscarParaReservar(numero)
+                .orElseThrow(() -> noExiste(numero));
+    }
+
+    // El mensaje del 404 se arma en un solo lugar (no se repite el texto).
+    private RecursoNoEncontradoException noExiste(String numero) {
+        return new RecursoNoEncontradoException("No existe la habitación " + numero);
     }
 }
