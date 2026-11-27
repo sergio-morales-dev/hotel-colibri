@@ -9,9 +9,9 @@ SOAP heredados (divisas y pagos) a partir de sus WSDL.
 | Nombre | Matrícula | Responsabilidad |
 |---|---|---|
 | Sergio Antonio Morales Mavil | 200910011 | Líder técnico: repositorio, servicio de divisas y API REST |
-| Jaqueline López Álvarez | 202360086 | _(su parte la cubre Sergio)_ |
+| Jaqueline López Álvarez | 202360086 | |
 | Francisco Robles | _pendiente_ | Servicio SOAP de pagos y facturación |
-| Magaly Sánchez | _pendiente_ | Documento de arquitectura y evidencias |
+| Magaly Sánchez | 201120142 | Documento de arquitectura y evidencias |
 
 ## Tecnologías
 
